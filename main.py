@@ -68,10 +68,20 @@ kpis = {
     'Churn Rate': f"{(filtered_df['Churn'].sum() / filtered_df['Aprovações_Crédito'].sum() * 100):.1f}%"
 }
 
-# Exibição dos KPIs
-st.subheader("KPIs")
-for k, v in kpis.items():
-    st.metric(label=k, value=v)
+# Exibição dos KPIs em colunas
+col1, col2, col3 = st.columns(3)  # Cria 3 colunas para exibição lado a lado
+
+with col1:
+    st.metric(label="Aplicações", value=kpis['Aplicações'])
+    st.metric(label="Aprovações Crédito", value=kpis['Aprovações Crédito'])
+
+with col2:
+    st.metric(label="Aprovações Cartão", value=kpis['Aprovações Cartão'])
+    st.metric(label="Taxa Conversão Total", value=kpis['Taxa Conversão Total'])
+
+with col3:
+    st.metric(label="Custo Médio por Aprovação", value=kpis['Custo Médio por Aprovação'])
+    st.metric(label="Churn Rate", value=kpis['Churn Rate'])
 
 # Gráfico de Funil de Conversão
 st.subheader('Funil de Conversão por Campanha')
