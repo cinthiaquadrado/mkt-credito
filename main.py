@@ -34,7 +34,7 @@ df['Custo_Por_Aprovação'] = df['Orçamento'] / df['Aprovações_Crédito']
 st.title("Performance de Campanhas de Crédito")
 
 # Seleção de abas
-page = st.selectbox("Escolha uma página", ["Dashboard", "Explicações"])
+page = st.selectbox("Escolha uma página", ["Dashboard", "Explicações de métricas"])
 
 if page == "Dashboard":
     # Seleção de datas e canais
@@ -129,7 +129,7 @@ if page == "Dashboard":
     st.subheader('Tabela Detalhada')
     st.dataframe(filtered_df)
 
-elif page == "Explicações":
+elif page == "Explicações de métricas":
     # Explicação sobre as métricas
     st.subheader("Explicação das Métricas")
 
