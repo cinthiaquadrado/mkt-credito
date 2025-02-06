@@ -9,6 +9,7 @@ dates = pd.date_range(start='2024-01-01', periods=100, freq='D')
 campaigns = ['Promoção A', 'Promoção B', 'Promoção C', 'Promoção D']
 channels = ['Email', 'Redes Sociais', 'TV', 'Google Ads']
 
+# Dados simulados com a lógica de que Aprovações Crédito >= Aprovações Cartão
 data = {
     'Data': np.random.choice(dates, 1000),
     'Campanha': np.random.choice(campaigns, 1000),
@@ -22,12 +23,16 @@ data = {
     'Churn': np.random.randint(5, 200, 1000)
 }
 
-df = pd.DataFrame(data).sort_values('Data')
+# Garantir que as Aprovações_Cartão sejam sempre menores ou iguais a Aprovações_Crédito
+df = pd.DataFrame(data)
+df['Aprovações_Cartão'] = df.apply(lambda row: min(row['Aprovações_Crédito'], row['Aprovações_Cartão']), axis=1)
+df = df.sort_values('Data')
 
 # Cálculo de métricas derivadas
 df['Taxa_Clique'] = df['Cliques'] / df['Acessos']
 df['Taxa_Aplicação'] = df['Aplicações'] / df['Cliques']
-df['Taxa_Aprovação'] = df['Aprovações_Crédito'] / df['Aplicações']
+df['Taxa_Aprovação_Crédito'] = df['Aprovações_Crédito'] / df['Aplicações']
+df['Taxa_Aprovação_Cartão'] = df['Aprovações_Cartão'] / df['Aprovações_Crédito']
 df['Custo_Por_Aprovação'] = df['Orçamento'] / df['Aprovações_Crédito']
 
 # Layout Streamlit
@@ -64,7 +69,8 @@ if page == "Dashboard":
         'Aplicações': filtered_df['Aplicações'].sum(),
         'Aprovações Crédito': filtered_df['Aprovações_Crédito'].sum(),
         'Aprovações Cartão': filtered_df['Aprovações_Cartão'].sum(),
-        'Taxa Conversão Total': f"{(filtered_df['Aprovações_Crédito'].sum() / filtered_df['Acessos'].sum() * 100):.1f}%",
+        'Taxa Conversão Crédito': f"{(filtered_df['Aprovações_Crédito'].sum() / filtered_df['Acessos'].sum() * 100):.1f}%",
+        'Taxa Conversão Cartão': f"{(filtered_df['Aprovações_Cartão'].sum() / filtered_df['Aprovações_Crédito'].sum() * 100):.1f}%",
         'Custo Médio por Aprovação': f"R${filtered_df['Custo_Por_Aprovação'].mean():.2f}",
         'Churn Rate': f"{(filtered_df['Churn'].sum() / filtered_df['Aprovações_Crédito'].sum() * 100):.1f}%"
     }
@@ -78,7 +84,7 @@ if page == "Dashboard":
 
     with col2:
         st.metric(label="Aprovações Cartão", value=kpis['Aprovações Cartão'])
-        st.metric(label="Taxa Conversão Total", value=kpis['Taxa Conversão Total'])
+        st.metric(label="Taxa Conversão Crédito", value=kpis['Taxa Conversão Crédito'])
 
     with col3:
         st.metric(label="Custo Médio por Aprovação", value=kpis['Custo Médio por Aprovação'])
@@ -91,9 +97,10 @@ if page == "Dashboard":
             'Acessos': 'sum',
             'Cliques': 'sum',
             'Aplicações': 'sum',
-            'Aprovações_Crédito': 'sum'
+            'Aprovações_Crédito': 'sum',
+            'Aprovações_Cartão': 'sum'
         }).reset_index(),
-        x=['Acessos', 'Cliques', 'Aplicações', 'Aprovações_Crédito'],
+        x=['Acessos', 'Cliques', 'Aplicações', 'Aprovações_Crédito', 'Aprovações_Cartão'],
         y='Campanha',
         title='Funil de Conversão por Campanha'
     )
@@ -134,34 +141,37 @@ elif page == "Explicações de métricas":
     st.subheader("Explicação das Métricas")
 
     with st.expander("Clique aqui para ver as explicações"):
-        st.write("""
+        st.write(""" 
             ### 1. **Aplicações**
-            Refere-se ao número total de aplicações realizadas pelos usuários que visualizaram a campanha. Esse número é um indicativo do interesse gerado pela campanha.
+            Refere-se ao número total de aplicações realizadas pelos usuários que visualizaram a campanha.
 
             ### 2. **Aprovações Crédito**
-            Número total de aprovações de crédito realizadas com sucesso após uma aplicação. Esse KPI é essencial para entender o sucesso real da campanha em termos de conversões.
+            Número total de aprovações de crédito realizadas com sucesso após uma aplicação.
 
             ### 3. **Aprovações Cartão**
-            Número total de aprovações de cartão de crédito realizadas com sucesso após a aprovação do crédito. Pode ser usado para avaliar o sucesso das campanhas em termos de novos cartões emitidos.
+            Número total de aprovações de cartão realizadas com sucesso após a aprovação de crédito. Essa é uma fase seguinte do processo e pode ser menor que as aprovações de crédito.
 
-            ### 4. **Taxa de Conversão Total**
-            Essa taxa calcula a porcentagem de acessos que resultaram em aprovações de crédito. A fórmula usada é:
+            ### 4. **Taxa Conversão Crédito**
+            Taxa que mede a porcentagem de acessos que resultaram em aprovações de crédito. A fórmula é:
             ```
             (Aprovações Crédito / Acessos) * 100
             ```
-            Uma taxa alta indica que a campanha foi bem-sucedida em converter visitantes em clientes aprovados.
 
-            ### 5. **Custo Médio por Aprovação**
-            O custo médio gasto por cada aprovação de crédito. A fórmula usada é:
+            ### 5. **Taxa Conversão Cartão**
+            Taxa que mede a porcentagem de aprovações de crédito que resultaram em aprovações de cartão. A fórmula é:
+            ```
+            (Aprovações Cartão / Aprovações Crédito) * 100
+            ```
+
+            ### 6. **Custo Médio por Aprovação**
+            O custo médio gasto por cada aprovação de crédito. A fórmula é:
             ```
             Orçamento / Aprovações Crédito
             ```
-            Esse KPI ajuda a medir a eficiência do orçamento da campanha, identificando se os gastos estão gerando resultados.
 
-            ### 6. **Churn Rate**
-            Taxa de churn é a porcentagem de clientes que desistiram do processo de aplicação ou aprovação. A fórmula usada é:
+            ### 7. **Churn Rate**
+            Taxa de churn que mede o percentual de desistências no processo, sendo calculado da seguinte forma:
             ```
             (Churn / Aprovações Crédito) * 100
-            ```
-            Um churn baixo indica uma boa retenção de clientes durante o processo de aprovação.
-        """)
+            """)
+
