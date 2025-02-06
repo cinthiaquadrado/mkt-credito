@@ -30,6 +30,9 @@ df['Taxa_Aplicação'] = df['Aplicações'] / df['Cliques']
 df['Taxa_Aprovação'] = df['Aprovações_Crédito'] / df['Aplicações']
 df['Custo_Por_Aprovação'] = df['Orçamento'] / df['Aprovações_Crédito']
 
+# Garantir que a coluna 'Data' seja do tipo datetime
+df['Data'] = pd.to_datetime(df['Data'])
+
 # Layout Streamlit
 st.title("Performance de Campanhas de Crédito")
 
@@ -38,6 +41,10 @@ start_date = st.date_input('Início', df['Data'].min())
 end_date = st.date_input('Fim', df['Data'].max())
 selected_channels = st.multiselect('Canal', channels, default=channels)
 selected_campaigns = st.multiselect('Campanha', campaigns, default=campaigns)
+
+# Converter start_date e end_date para datetime
+start_date = pd.to_datetime(start_date)
+end_date = pd.to_datetime(end_date)
 
 # Filtragem de dados
 filtered_df = df[
