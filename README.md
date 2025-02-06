@@ -45,14 +45,5 @@ As principais métricas calculadas são:
 O projeto também oferece gráficos interativos utilizando **Plotly** e **Streamlit** para facilitar a análise dos dados:
 
 - **Funil de Conversão por Campanha**: Mostra a jornada do cliente desde os acessos até a aprovação do cartão, destacando a taxa de conversão em cada etapa.
-
 - **Tendência de Aprovações**: Exibe a evolução das aprovações de crédito e cartão ao longo do tempo.
-
 - **Eficiência de Custo por Canal/Campanha**: Um gráfico de heatmap para analisar a eficiência do custo por aprovação em cada canal de divulgação e campanha.
-
-
-- pandas
-- numpy
-- plotly
-- streamlit
-
