@@ -1,11 +1,7 @@
-!pip install pandas plotly dash
-
 import pandas as pd
 import numpy as np
 import plotly.express as px
-import plotly.graph_objects as go
-import dash
-from dash import dcc, html, Input, Output, State
+import streamlit as st
 
 # Simulação de dados mais realista (com métricas de crédito)
 np.random.seed(42)
@@ -17,7 +13,7 @@ data = {
     'Data': np.random.choice(dates, 1000),
     'Campanha': np.random.choice(campaigns, 1000),
     'Canal': np.random.choice(channels, 1000),
-    'Orçamento': np.random.randint(1000, 5000, 1000),  # Novo campo
+    'Orçamento': np.random.randint(1000, 5000, 1000),
     'Acessos': np.random.randint(500, 5000, 1000),
     'Cliques': np.random.randint(100, 2000, 1000),
     'Aplicações': np.random.randint(50, 1000, 1000),
@@ -34,150 +30,83 @@ df['Taxa_Aplicação'] = df['Aplicações'] / df['Cliques']
 df['Taxa_Aprovação'] = df['Aprovações_Crédito'] / df['Aplicações']
 df['Custo_Por_Aprovação'] = df['Orçamento'] / df['Aprovações_Crédito']
 
-# Inicialização do Dash
-app = dash.Dash(__name__)
-app.title = "Analytics de Campanhas de Crédito"
+# Layout Streamlit
+st.title("Performance de Campanhas de Crédito")
 
-# Layout do Dashboard
-app.layout = html.Div([
-    html.H1("Performance de Campanhas de Crédito", style={'textAlign': 'center'}),
-    
-    # Filtros
-    html.Div([
-        html.Div([
-            html.Label("Período:"),
-            dcc.DatePickerRange(
-                id='date-range',
-                start_date=df['Data'].min(),
-                end_date=df['Data'].max()
-            )
-        ], style={'width': '30%', 'display': 'inline-block'}),
-        
-        html.Div([
-            html.Label("Canal:"),
-            dcc.Dropdown(
-                id='channel-filter',
-                options=[{'label': c, 'value': c} for c in channels],
-                multi=True
-            )
-        ], style={'width': '30%', 'display': 'inline-block'}),
-        
-        html.Div([
-            html.Label("Campanha:"),
-            dcc.Dropdown(
-                id='campaign-filter',
-                options=[{'label': c, 'value': c} for c in campaigns],
-                multi=True
-            )
-        ], style={'width': '30%', 'display': 'inline-block'})
-    ]),
-    
-    # KPIs
-    html.Div(id='kpi-container', style={'marginTop': 20}),
-    
-    # Gráficos
-    dcc.Graph(id='conversion-funnel'),
-    dcc.Graph(id='approval-trend'),
-    dcc.Graph(id='roi-heatmap'),
-    
-    # Tabela Detalhada
-    html.Div(id='data-table', style={'marginTop': 20})
-])
+# Filtros
+start_date = st.date_input('Início', df['Data'].min())
+end_date = st.date_input('Fim', df['Data'].max())
+selected_channels = st.multiselect('Canal', channels, default=channels)
+selected_campaigns = st.multiselect('Campanha', campaigns, default=campaigns)
 
-# Callbacks
-@app.callback(
-    [Output('kpi-container', 'children'),
-     Output('conversion-funnel', 'figure'),
-     Output('approval-trend', 'figure'),
-     Output('roi-heatmap', 'figure'),
-     Output('data-table', 'children')],
-    [Input('date-range', 'start_date'),
-     Input('date-range', 'end_date'),
-     Input('channel-filter', 'value'),
-     Input('campaign-filter', 'value')]
+# Filtragem de dados
+filtered_df = df[
+    (df['Data'] >= start_date) & 
+    (df['Data'] <= end_date)
+]
+
+if selected_channels:
+    filtered_df = filtered_df[filtered_df['Canal'].isin(selected_channels)]
+
+if selected_campaigns:
+    filtered_df = filtered_df[filtered_df['Campanha'].isin(selected_campaigns)]
+
+# Cálculo de KPIs
+kpis = {
+    'Aplicações': filtered_df['Aplicações'].sum(),
+    'Aprovações Crédito': filtered_df['Aprovações_Crédito'].sum(),
+    'Aprovações Cartão': filtered_df['Aprovações_Cartão'].sum(),
+    'Taxa Conversão Total': f"{(filtered_df['Aprovações_Crédito'].sum() / filtered_df['Acessos'].sum() * 100):.1f}%",
+    'Custo Médio por Aprovação': f"R${filtered_df['Custo_Por_Aprovação'].mean():.2f}",
+    'Churn Rate': f"{(filtered_df['Churn'].sum() / filtered_df['Aprovações_Crédito'].sum() * 100):.1f}%"
+}
+
+# Exibição dos KPIs
+st.subheader("KPIs")
+for k, v in kpis.items():
+    st.metric(label=k, value=v)
+
+# Gráfico de Funil de Conversão
+st.subheader('Funil de Conversão por Campanha')
+funnel_fig = px.funnel(
+    filtered_df.groupby('Campanha').agg({
+        'Acessos': 'sum',
+        'Cliques': 'sum',
+        'Aplicações': 'sum',
+        'Aprovações_Crédito': 'sum'
+    }).reset_index(),
+    x=['Acessos', 'Cliques', 'Aplicações', 'Aprovações_Crédito'],
+    y='Campanha',
+    title='Funil de Conversão por Campanha'
 )
-def update_dashboard(start_date, end_date, selected_channels, selected_campaigns):
-    # Filtragem de dados
-    filtered_df = df[
-        (df['Data'] >= start_date) & 
-        (df['Data'] <= end_date)
-    ]
-    
-    if selected_channels:
-        filtered_df = filtered_df[filtered_df['Canal'].isin(selected_channels)]
-        
-    if selected_campaigns:
-        filtered_df = filtered_df[filtered_df['Campanha'].isin(selected_campaigns)]
-    
-    # Cálculo de KPIs
-    kpis = {
-        'Aplicações': filtered_df['Aplicações'].sum(),
-        'Aprovações Crédito': filtered_df['Aprovações_Crédito'].sum(),
-        'Aprovações Cartão': filtered_df['Aprovações_Cartão'].sum(),
-        'Taxa Conversão Total': f"{(filtered_df['Aprovações_Crédito'].sum() / filtered_df['Acessos'].sum() * 100):.1f}%",
-        'Custo Médio por Aprovação': f"R${filtered_df['Custo_Por_Aprovação'].mean():.2f}",
-        'Churn Rate': f"{(filtered_df['Churn'].sum() / filtered_df['Aprovações_Crédito'].sum() * 100):.1f}%"
-    }
-    
-    # Layout dos KPIs
-    kpi_container = html.Div([
-        html.Div([
-            html.H4(k),
-            html.P(str(v)),
-        ], style={
-            'width': '16%', 
-            'display': 'inline-block',
-            'textAlign': 'center',
-            'border': '1px solid #ddd',
-            'padding': '10px',
-            'margin': '5px'
-        }) for k, v in kpis.items()
-    ])
-    
-    # Funil de Conversão
-    funnel_fig = px.funnel(
-        filtered_df.groupby('Campanha').agg({
-            'Acessos': 'sum',
-            'Cliques': 'sum',
-            'Aplicações': 'sum',
-            'Aprovações_Crédito': 'sum'
-        }).reset_index(),
-        x=['Acessos', 'Cliques', 'Aplicações', 'Aprovações_Crédito'],
-        y='Campanha',
-        title='Funil de Conversão por Campanha'
-    )
-    
-    # Tendência de Aprovações
-    trend_fig = px.line(
-        filtered_df.groupby('Data').agg({
-            'Aprovações_Crédito': 'sum',
-            'Aprovações_Cartão': 'sum'
-        }).reset_index(),
-        x='Data',
-        y=['Aprovações_Crédito', 'Aprovações_Cartão'],
-        title='Tendência de Aprovações',
-        markers=True
-    )
-    
-    # Heatmap de ROI
-    roi_fig = px.density_heatmap(
-        filtered_df,
-        x='Canal',
-        y='Campanha',
-        z='Custo_Por_Aprovação',
-        title='Eficiência de Custo por Canal/Campanha',
-        histfunc="avg"
-    )
-    
-    # Tabela Detalhada
-    table = dash.dash_table.DataTable(
-        data=filtered_df.to_dict('records'),
-        columns=[{'name': i, 'id': i} for i in filtered_df.columns],
-        page_size=10,
-        style_table={'overflowX': 'auto'}
-    )
-    
-    return kpi_container, funnel_fig, trend_fig, roi_fig, table
+st.plotly_chart(funnel_fig)
 
-if __name__ == '__main__':
-    app.run_server(debug=True, port=8051)
+# Gráfico de Tendência de Aprovações
+st.subheader('Tendência de Aprovações')
+trend_fig = px.line(
+    filtered_df.groupby('Data').agg({
+        'Aprovações_Crédito': 'sum',
+        'Aprovações_Cartão': 'sum'
+    }).reset_index(),
+    x='Data',
+    y=['Aprovações_Crédito', 'Aprovações_Cartão'],
+    title='Tendência de Aprovações',
+    markers=True
+)
+st.plotly_chart(trend_fig)
+
+# Gráfico de Heatmap de ROI
+st.subheader('Eficiência de Custo por Canal/Campanha')
+roi_fig = px.density_heatmap(
+    filtered_df,
+    x='Canal',
+    y='Campanha',
+    z='Custo_Por_Aprovação',
+    title='Eficiência de Custo por Canal/Campanha',
+    histfunc="avg"
+)
+st.plotly_chart(roi_fig)
+
+# Tabela Detalhada
+st.subheader('Tabela Detalhada')
+st.dataframe(filtered_df)
