@@ -83,6 +83,42 @@ with col3:
     st.metric(label="Custo Médio por Aprovação", value=kpis['Custo Médio por Aprovação'])
     st.metric(label="Churn Rate", value=kpis['Churn Rate'])
 
+# Explicação sobre as métricas
+st.subheader("Explicação das Métricas")
+
+with st.expander("Clique aqui para ver as explicações"):
+    st.write("""
+        ### 1. **Aplicações**
+        Refere-se ao número total de aplicações realizadas pelos usuários que visualizaram a campanha. Esse número é um indicativo do interesse gerado pela campanha.
+
+        ### 2. **Aprovações Crédito**
+        Número total de aprovações de crédito realizadas com sucesso após uma aplicação. Esse KPI é essencial para entender o sucesso real da campanha em termos de conversões.
+
+        ### 3. **Aprovações Cartão**
+        Número total de aprovações de cartão de crédito realizadas com sucesso após a aprovação do crédito. Pode ser usado para avaliar o sucesso das campanhas em termos de novos cartões emitidos.
+
+        ### 4. **Taxa de Conversão Total**
+        Essa taxa calcula a porcentagem de acessos que resultaram em aprovações de crédito. A fórmula usada é:
+        ```
+        (Aprovações Crédito / Acessos) * 100
+        ```
+        Uma taxa alta indica que a campanha foi bem-sucedida em converter visitantes em clientes aprovados.
+
+        ### 5. **Custo Médio por Aprovação**
+        O custo médio gasto por cada aprovação de crédito. A fórmula usada é:
+        ```
+        Orçamento / Aprovações Crédito
+        ```
+        Esse KPI ajuda a medir a eficiência do orçamento da campanha, identificando se os gastos estão gerando resultados.
+
+        ### 6. **Churn Rate**
+        Taxa de churn é a porcentagem de clientes que desistiram do processo de aplicação ou aprovação. A fórmula usada é:
+        ```
+        (Churn / Aprovações Crédito) * 100
+        ```
+        Um churn baixo indica uma boa retenção de clientes durante o processo de aprovação.
+    """)
+
 # Gráfico de Funil de Conversão
 st.subheader('Funil de Conversão por Campanha')
 funnel_fig = px.funnel(
